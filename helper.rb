@@ -64,6 +64,14 @@ module Clockwork
       t_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{today}日")
       y_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{yesterday}日")
     end
+    
+    #今回のチェックで新しく見つかった場合にメールを送信
+    send_flg = (t_flg && !@today_flg) || (y_flg && !@yesterday_flg)
+    send_email if send_flg
+    p send_flg
+    #今回の結果を保存
+    @today_flg = t_flg
+    @yesterday_flg = y_flg
   end
   
   #メール送信
@@ -87,6 +95,41 @@ module Clockwork
     }
     
     mail.deliver
+  end
+  
+  #テスト
+  def self.test
+    #初期化
+    url = "http://www.iryohoken.go.jp/shinryohoshu"
+    year = 26
+    month = 3
+    today = 26
+    yesterday = 25
+    update_flg = false
+    t_flg = false
+    y_flg = false
+    
+    #スクレイピング
+    page = open(url).read
+    document = Nokogiri::HTML(page, nil, 'SHIFT_JIS')
+    elms = document.xpath('//div[@class="news"]/center/table/tr[2]/td[2]/table/tr')
+
+    #過去7回分の更新を確認
+    7.times do |i|
+      date = elms[i*3+1].xpath('./td').first.content
+      content = elms[i*3+2].xpath('./td')[1].content
+      #今回のチェック結果
+      t_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{today}日")
+      y_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{yesterday}日")
+    end
+    
+    #今回のチェックで新しく見つかった場合にメールを送信
+    send_flg = (t_flg && !@today_flg) || (y_flg && !@yesterday_flg)
+    send_email if send_flg
+    p send_flg
+    #今回の結果を保存
+    @today_flg = t_flg
+    @yesterday_flg = y_flg
   end
 
   #時間になるとこれが発動
