@@ -19,7 +19,7 @@ module Clockwork
   #生存報告メール送信
   def self.living
     f = open("pass.txt")
-    pass = f.read
+    address,pass = f.read.split(" ")
     mail = Mail.new do
       from    'yamashita.helper@gmail.com'
       to      'yamashita.helper@gmail.com'
