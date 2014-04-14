@@ -136,7 +136,7 @@ module Clockwork
   handler do |job|
     self.send(job.to_sym)
   end
-  
+
   #スケジュール
   every(1.day, 'check_site', :at => '09:00')
   every(1.day, 'check_site', :at => '17:00')
