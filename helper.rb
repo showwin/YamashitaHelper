@@ -69,10 +69,10 @@ module Clockwork
   #メール送信
   def self.send_email
     f = open("pass.txt")
-    pass = f.read
+    address,pass = f.read.split(" ")
     mail = Mail.new do
       from    'yamashita.helper@gmail.com'
-      to      'showwin_kmc@yahoo.co.jp'
+      to      address
       subject '医薬品マスター更新のお知らせ'
       body    "山下さん\nお疲れ様です。\n\n【医薬品マスター】が更新されました。\nご確認ください。\nhttp://www.iryohoken.go.jp/shinryohoshu"
     end
