@@ -65,44 +65,6 @@ module Clockwork
       y_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{yesterday}日")
     end
   end
-    
-  #メイン処理
-  def self.check_site
-    #初期化
-    url = "http://www.iryohoken.go.jp/shinryohoshu"
-    #year = Date.today.year-2000+12
-    #month = Date.today.month
-    #today = Date.today.day
-    year = 26
-    month = 3
-    day = 26
-    yesterday = (Date.today-1).day
-    update_flg = false
-    t_flg = false
-    y_flg = false
-
-    #スクレイピング
-    page = open(url).read
-    document = Nokogiri::HTML(page, nil, 'SHIFT_JIS')
-    elms = document.xpath('//div[@class="news"]/center/table/tr[2]/td[2]/table/tr')
-
-    #過去2回分の更新を確認
-    2.times do |i|
-      date = elms[i*3+1].xpath('./td').first.content
-      content = elms[i*3+2].xpath('./td')[1].content
-      #今回のチェック結果
-      t_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{today}日")
-      y_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{yesterday}日")
-    end
-    
-    #今回のチェックで新しく見つかった場合にメールを送信
-    send_flg = (t_flg && !@today_flg) || (y_flg && !@yesterday_flg)
-    send_email if send_flg
-    p send_flg
-    #今回の結果を保存
-    @today_flg = t_flg
-    @yesterday_flg = y_flg
-  end
   
   #メール送信
   def self.send_email
@@ -131,8 +93,6 @@ module Clockwork
   handler do |job|
     self.send(job.to_sym)
   end
-  
-  every(1.day, 'check_site2', :at => '00:41')
   
   #スケジュール
   every(1.day, 'check_site', :at => '09:00')
