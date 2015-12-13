@@ -4,30 +4,31 @@ require 'nokogiri'
 require 'open-uri'
 
 module Clockwork
-  
+
   #初期化
   @today_flg = false
   @yesterday_flg = false
-  
+
   #日付変更時の初期化と生存報告
   def self.day_init
     @yesterday_flg = @today_flg
     @today_flg = false
-    living
+    send_living_mail
   end
-  
-  #生存報告メール送信
-  def self.living
-    f = open("pass.txt")
-    address,pass = f.read.split(" ")
+
+  # メール送信
+  def self.deliver_mail(mail_subject, mail_body, mail_to = nil)
+    f = open('pass.txt')
+    address, pass = f.read.split
+    mail_to ||= address
     mail = Mail.new do
       from    'yamashita.helper@gmail.com'
-      to      'yamashita.helper@gmail.com'
-      subject '生存報告'
-      body    "山下さんヘルパーは正常に動いています"
+      to      mail_to
+      subject mail_subject
+      body    mail_body
     end
-    
-    mail.delivery_method :smtp, {         
+
+    mail.delivery_method :smtp, {
       address:   'smtp.gmail.com',
       port:      587,
       user_name: 'yamashita.helper@gmail.com',
@@ -38,108 +39,122 @@ module Clockwork
 
     mail.deliver
   end
-  
-  #メイン処理
+
+  # 生存報告メール
+  def self.send_living_mail
+    deliver_mail(
+      '生存報告',
+      '山下さんヘルパーは正常に動いています'
+    )
+  end
+
+  # 医薬品マスターが更新された通知
+  def self.send_update_email
+    deliver_mail(
+      '医薬品マスター更新のお知らせ',
+      "山下さん\nお疲れ様です。\n\n【医薬品マスター】が更新されました。\nご確認ください。\nhttp://www.iryohoken.go.jp/shinryohoshu"
+    )
+  end
+
+  # スクリプト修正依頼通知
+  def self.send_error_mail
+    deliver_mail(
+      '医薬品マスターのHTML構造が変わりました',
+      "【医薬品マスター】のHTML構造が変わりました。\n修正してください。\nhttp://www.iryohoken.go.jp/shinryohoshu",
+      'showwin.czy@gmail.com'
+    )
+  end
+
+  # メイン処理
   def self.check_site
-    #初期化
-    url = "http://www.iryohoken.go.jp/shinryohoshu"
-    year = Date.today.year-2000+12
-    month = Date.today.month
-    today = Date.today.day
-    yesterday = (Date.today-1).day
+    # 初期化
+    url = 'http://www.iryohoken.go.jp/shinryohoshu'
+    t_year = Date.today.year-2000+12
+    t_month = Date.today.month
+    t_day = Date.today.day
+    y_year = (Date.today-1).year-2000+12
+    y_month = (Date.today-1).month
+    y_day = (Date.today-1).day
     update_flg = false
     t_flg = false
     y_flg = false
-    
-    #スクレイピング
+
+    # スクレイピング
     page = open(url).read
     document = Nokogiri::HTML(page, nil, 'SHIFT_JIS')
     elms = document.xpath('//div[@class="news"]/center/table/tr[2]/td[2]/table/tr')
 
-    #過去2回分の更新を確認
+    # 過去2回分の更新を確認
     2.times do |i|
-      date = elms[i*3+1].xpath('./td').first.content
-      content = elms[i*3+2].xpath('./td')[1].content
-      #今回のチェック結果
-      t_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{today}日")
-      y_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{yesterday}日")
+      date = elms[i*3].xpath('./td').first.content
+      content = elms[i*3+1].xpath('./td')[1].content
+
+      # HTMLの構造が変わっていたら通知
+      send_error_mail unless date.include?('年')
+
+      # 今回のチェック結果
+      t_flg = true if content.include?("医薬品マスター更新") && date.include?("#{t_year}年#{t_month}月#{t_day}日")
+      y_flg = true if content.include?("医薬品マスター更新") && date.include?("#{y_year}年#{y_month}月#{y_day}日")
     end
-    
-    #今回のチェックで新しく見つかった場合にメールを送信
+
+    # 今回のチェックで新しく見つかった場合にメールを送信
     send_flg = (t_flg && !@today_flg) || (y_flg && !@yesterday_flg)
-    send_email if send_flg
-    p send_flg
-    #今回の結果を保存
+    send_update_email if send_flg
+
+    # 今回の結果を保存
     @today_flg = t_flg
     @yesterday_flg = y_flg
   end
-  
-  #メール送信
-  def self.send_email
-    f = open("pass.txt")
-    address,pass = f.read.split(" ")
-    mail = Mail.new do
-      from    'yamashita.helper@gmail.com'
-      to      address
-      subject '医薬品マスター更新のお知らせ'
-      body    "山下さん\nお疲れ様です。\n\n【医薬品マスター】が更新されました。\nご確認ください。\nhttp://www.iryohoken.go.jp/shinryohoshu"
-    end
-    
-    mail.delivery_method :smtp, {         
-      address:   'smtp.gmail.com',
-      port:      587,
-      user_name: 'yamashita.helper@gmail.com',
-      password: pass,
-      authentication: 'plain',
-      enable_starttls_auto: true
-    }
-    
-    mail.deliver
-  end
-  
-  #テスト
+
+  # テスト
   def self.test
-    #初期化
+    # 初期化
     url = "http://www.iryohoken.go.jp/shinryohoshu"
-    year = 26
-    month = 3
-    today = 26
-    yesterday = 25
+    t_year = 27
+    t_month = 11
+    t_day = 1
+    y_year = 27
+    y_month = 10
+    y_day = 31
     update_flg = false
     t_flg = false
     y_flg = false
-    
-    #スクレイピング
+
+    # スクレイピング
     page = open(url).read
     document = Nokogiri::HTML(page, nil, 'SHIFT_JIS')
     elms = document.xpath('//div[@class="news"]/center/table/tr[2]/td[2]/table/tr')
 
-    #過去7回分の更新を確認
-    7.times do |i|
-      date = elms[i*3+1].xpath('./td').first.content
-      content = elms[i*3+2].xpath('./td')[1].content
-      #今回のチェック結果
-      t_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{today}日")
-      y_flg = true if content.include?("医薬品マスター更新") && date.include?("#{year}年#{month}月#{yesterday}日")
+    # 過去2回分の更新を確認
+    2.times do |i|
+      date = elms[i*3].xpath('./td').first.content
+      content = elms[i*3+1].xpath('./td')[1].content
+
+      # HTMLの構造が変わっていたら通知
+      send_error_mail unless date.include?('年')
+
+      # 今回のチェック結果
+      t_flg = true if content.include?("医薬品マスター更新") && date.include?("#{t_year}年#{t_month}月#{t_day}日")
+      y_flg = true if content.include?("医薬品マスター更新") && date.include?("#{y_year}年#{y_month}月#{y_day}日")
     end
-    
-    #今回のチェックで新しく見つかった場合にメールを送信
+
+    # 今回のチェックで新しく見つかった場合にメールを送信
     send_flg = (t_flg && !@today_flg) || (y_flg && !@yesterday_flg)
-    send_email if send_flg
+    # send_update_email if send_flg
     p send_flg
-    #今回の結果を保存
+
+    # 今回の結果を保存
     @today_flg = t_flg
     @yesterday_flg = y_flg
   end
 
-  #時間になるとこれが発動
+  # 時間になるとこれが発動
   handler do |job|
     self.send(job.to_sym)
   end
 
-  #スケジュール
-  every(1.day, 'check_site', :at => '09:00')
-  every(1.day, 'check_site', :at => '17:00')
-  every(1.day, 'day_init', :at => '00:00')
-  
+  # スケジュール
+  every(1.day, 'check_site', at: '09:00')
+  every(1.day, 'check_site', at: '17:00')
+  every(1.day, 'day_init', at: '00:00')
 end
