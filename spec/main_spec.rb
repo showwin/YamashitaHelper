@@ -1,4 +1,4 @@
-require_relative '../script.rb'
+require_relative '../main.rb'
 
 RSpec.describe 'YamashitaHelper' do
   describe '#daily_init' do
