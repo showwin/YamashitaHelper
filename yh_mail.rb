@@ -6,32 +6,32 @@ class YHMail
     # 生存報告メール
     def report_running
       deliver(
+        'yamashita.helper@gmail.com',
         '生存報告',
-        '山下さんヘルパーは正常に動いています',
-        'yamashita.helper@gmail.com'
+        '山下さんヘルパーは正常に動いています'
       )
     end
 
     # 医薬品マスターが更新された通知
-    def repote_update
+    def report_update
       deliver(
+        ENV['YH_YAMASHITA_EMAIL_ADDRESS'],
         '医薬品マスター更新のお知らせ',
-        "山下さん\nお疲れ様です。\n\n【医薬品マスター】が更新されました。\nご確認ください。\nhttp://www.iryohoken.go.jp/shinryohoshu",
-        ENV['YH_YAMASHITA_EMAIL_ADDRESS']
+        "山下さん\nお疲れ様です。\n\n【医薬品マスター】が更新されました。\nご確認ください。\nhttp://www.iryohoken.go.jp/shinryohoshu"
       )
     end
 
     # スクリプト修正依頼通知
-    def repote_error
+    def report_error
       deliver(
+        'showwin.czy@gmail.com',
         '医薬品マスターのHTML構造が変わりました',
-        "【医薬品マスター】のHTML構造が変わりました。\n修正してください。\nhttp://www.iryohoken.go.jp/shinryohoshu",
-        'showwin.czy@gmail.com'
+        "【医薬品マスター】のHTML構造が変わりました。\n修正してください。\nhttp://www.iryohoken.go.jp/shinryohoshu"
       )
     end
 
     # メール送信
-    def deliver(mail_subject, mail_body, mail_to)
+    def deliver(mail_to, mail_subject, mail_body)
       mail = Mail.new do
         from 'yamashita.helper@gmail.com'
         to mail_to
