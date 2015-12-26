@@ -14,7 +14,7 @@ YamashitaHelper
 
 2. スクリプトをデーモン化して実行する
   ```
-  $ clockworkd -c main.rb start
+  $ clockworkd -c main.rb start --log
   ```
 
 ### Tips
