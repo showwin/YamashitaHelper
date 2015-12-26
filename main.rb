@@ -1,4 +1,5 @@
 require 'clockwork'
+require 'daemons'
 require_relative './yh_mail'
 require_relative './yh_scraper'
 
