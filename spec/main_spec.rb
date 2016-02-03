@@ -4,8 +4,12 @@ RSpec.describe 'YamashitaHelper' do
   describe '#daily_init' do
     it 'should create today and yesterday string' do
       Clockwork.daily_init(Date.new(2015, 01, 01), true)
-      expect(Clockwork.today_str).to eq('27年1月1日')
-      expect(Clockwork.ystday_str).to eq('26年12月31日')
+      expect(Clockwork.today_year).to eq('27年')
+      expect(Clockwork.today_month).to eq('1月')
+      expect(Clockwork.today_day).to eq('1日')
+      expect(Clockwork.ystday_year).to eq('26年')
+      expect(Clockwork.ystday_month).to eq('12月')
+      expect(Clockwork.ystday_day).to eq('31日')
     end
 
     it 'should init today_updated' do
@@ -74,6 +78,25 @@ RSpec.describe 'YamashitaHelper' do
         expect(Clockwork.today_updated).to be_falsey
         expect(Clockwork.yesterday_updated).to be_falsey
         expect(Clockwork.scrp.dom_changed?).to be_truthy
+      end
+    end
+  end
+
+  # 監視先サイトのHTML構造が変わっている場合 (それでも検知しないといけない)
+  describe '#check_site to the other dom' do
+    before(:each) do
+      Clockwork.today_updated = false
+      Clockwork.yesterday_updated = false
+      Clockwork.daily_init(Date.new(2016, 1, 15), true)
+    end
+
+    # today -> 2016/01/15
+    context 'page updated today' do
+      it 'should detect update' do
+        Clockwork.check_site('./spec/fixtures/the_other_dom.html', true)
+        expect(Clockwork.today_updated).to be_truthy
+        expect(Clockwork.yesterday_updated).to be_falsey
+        expect(Clockwork.scrp.dom_changed?).to be_falsey
       end
     end
   end
