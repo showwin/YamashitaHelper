@@ -7,7 +7,8 @@ require_relative './yh_scraper'
 module Clockwork
   class << self
     # for test
-    attr_reader :today_str, :ystday_str, :scrp
+    attr_reader :today_year, :today_month, :today_day,
+                :ystday_year, :ystday_month, :ystday_day, :scrp
     attr_accessor :today_updated, :yesterday_updated
 
     TARGET_URL = 'http://www.iryohoken.go.jp/shinryohoshu'
@@ -20,8 +21,12 @@ module Clockwork
 
       today ||= Date.today
       ystday = today - 1
-      @today_str = "#{today.year - 2000 + 12}年#{today.month}月#{today.day}日"
-      @ystday_str = "#{ystday.year - 2000 + 12}年#{ystday.month}月#{ystday.day}日"
+      @today_year = "#{today.year - 2000 + 12}年"
+      @today_month = "#{today.month}月"
+      @today_day = "#{today.day}日"
+      @ystday_year = "#{ystday.year - 2000 + 12}年"
+      @ystday_month = "#{ystday.month}月"
+      @ystday_day = "#{ystday.day}日"
 
       YHMail.report_running unless debug
     end
@@ -48,15 +53,24 @@ module Clockwork
     #   (1) 09:00チェックの時点で、今日00:00 ~ 今日09:00 に更新されたのを検知
     #   (2) 17:00チェックの時点で、今日09:00 ~ 今日17:00 に更新されたのを検知
     def today_has_new_update?
-      f1 = @scrp.text1.include?('医薬品マスター更新') && @scrp.date1.include?(@today_str)
+      f1 = @scrp.text1.include?('医薬品マスター更新') &&
+           @scrp.date1.include?(@today_year) &&
+           @scrp.date1.include?(@today_month) &&
+           @scrp.date1.include?(@today_day)
       f1 && !@today_updated
     end
 
     # 昨日の日付で更新されたのを*初めて*検知した?
     #   (1) 09:00チェックの時点で、昨日17:00 ~ 昨日24:00 に更新されたのを検知
     def yesterday_has_new_update?
-      f1 = @scrp.text1.include?('医薬品マスター更新') && @scrp.date1.include?(@ystday_str)
-      f2 = @scrp.text2.include?('医薬品マスター更新') && @scrp.date2.include?(@ystday_str)
+      f1 = @scrp.text1.include?('医薬品マスター更新') &&
+           @scrp.date1.include?(@ystday_year) &&
+           @scrp.date1.include?(@ystday_month) &&
+           @scrp.date1.include?(@ystday_day)
+      f2 = @scrp.text2.include?('医薬品マスター更新') &&
+           @scrp.date2.include?(@ystday_year) &&
+           @scrp.date2.include?(@ystday_month) &&
+           @scrp.date2.include?(@ystday_day)
       (f1 || f2) && !@yesterday_updated
     end
   end
